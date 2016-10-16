@@ -5,6 +5,8 @@ if (minID) {
   minID = 1;
   localStorage.setItem('minID', minID)
 }
+
+var showWebcam = false;
 function updateID() {
   localStorage.setItem('minID', ++minID);
   return minID;
@@ -28,20 +30,101 @@ function saveContacts(contact) {
   localStorage.setItem('contacts', JSON.stringify(contacts));
 }
 
-var MainView = React.createClass({
+var WebcamView = React.createClass({
+  loadCam: function() {
+
+    this.seed = 0;
+    Webcam.set({
+    width: screen.width-25,
+    height: screen.height-175,
+    fps: 80,
+    dest_width: 400,
+    dest_height: 300,
+});
+    Webcam.attach( '#my_camera' );
+    this.snapPics();
+  },
+  snapPics: function() {
+    this.seed += 1;
+    var _this = this;
+    setTimeout(function() {
+      Webcam.snap( function(data_uri) {
+        console.log('called');
+        var fd = {data: data_uri, seed: '2'};
+        $.ajax({
+          type: 'POST',
+          url: 'https://hmivgifcxv.localtunnel.me/api/image/',
+          data: fd,
+        }).done(function(data) {
+          $.ajax({
+            type: 'POST',
+            url: 'https://hmivgifcxv.localtunnel.me/api/verify/',
+            data: {data: data},
+          }).done(function(returnData) {
+            var match = returnData.match;
+            var certainty = returnData.certainty * 100;
+            var matchName = returnData.matchName;
+            console.log(matchName);
+            var msg = new SpeechSynthesisUtterance('I was ' + (match ? '' : 'not ') + 'able to find a match' + (match ? (' of' + matchName) : '') + '  with' + certainty + ' percent certainty');
+            window.speechSynthesis.speak(msg);
+            console.log(returnData.match);
+            console.log(returnData.certainty);
+          });
+        });
+        if (showWebcam) {
+          _this.snapPics();
+        }
+    });
+  }, 10000);
+  },
+  dataURItoBlob: function(dataURI) {
+
+    var binary = atob(dataURI.split(',')[1]);
+    var array = [];
+    for(var i = 0; i < binary.length; i++) {
+        array.push(binary.charCodeAt(i));
+    }
+    return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+},
+
   render: function() {
+    this.loadCam()
+    return (
+      <div>
+      </div>
+    )
+  }
+});
+
+var MainView = React.createClass({
+  getInitialState: function() {
+    return {
+      view: <ContactView />
+    }
+  },
+  render: function() {
+    var _this = this;
     return (
       <div>
       <div className='nav' style={{backgroundColor: 'black'}}>
             <nav className='nav'>
                 <ul className={'pull-left nav nav-justified center-block'}>
-                    <li><a href='#Contacts' target={"_self"}>Contacts</a></li>
-                    <li><a href='#Live' target={"_self"}>Live Video</a></li>
-                    <li><a href='#Recent' target={"_self"}>Recent Activity</a></li>
+                    <li><a href='#Contacts' target={"_self"} onClick={function() {
+                      document.getElementById('my_camera').style.display = 'none';
+                      _this.setState({view: <ContactView />});
+                      console.log('hide');
+                      showWebcam = false;
+                    }}>Contacts</a></li>
+                    <li><a href='#Live' onClick={function() {
+                      document.getElementById('my_camera').style.display = 'block';
+                      _this.setState({view: <WebcamView />});
+                      showWebcam = true;
+                      console.log('call');
+                    }} target={"_self"}>Live Video</a></li>
                 </ul>
             </nav>
         </div>
-        <ContactView />
+        {this.state.view}
         </div>
     );
   }
