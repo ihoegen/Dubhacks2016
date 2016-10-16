@@ -65,7 +65,31 @@ var WebcamView = React.createClass({
             var certainty = returnData.certainty * 100;
             var matchName = returnData.matchName;
             console.log(matchName);
-            var msg = new SpeechSynthesisUtterance('I was ' + (match ? '' : 'not ') + 'able to find a match' + (match ? (' of' + matchName) : '') + '  with' + certainty + ' percent certainty');
+            var foundString = 'I was ' + (match ? '' : 'not ') + 'able to find a match ' + ((match && matchName) ? (' of ' + matchName) : '') + '  with ' + parseInt(certainty, 10) + ' percent certainty';
+            var msg = new SpeechSynthesisUtterance(foundString);
+            toastr.options = {
+              "closeButton": false,
+              "debug": false,
+              "newestOnTop": false,
+              "progressBar": false,
+              "positionClass": "toast-top-right",
+              "preventDuplicates": false,
+              "onclick": null,
+              "showDuration": "300",
+              "hideDuration": "1000",
+              "timeOut": "5000",
+              "extendedTimeOut": "1000",
+              "showEasing": "swing",
+              "hideEasing": "linear",
+              "showMethod": "fadeIn",
+              "hideMethod": "fadeOut"
+            }
+            if (match) {
+              var toastOption = 'success';
+            } else {
+              var toastOption = 'error';
+            }
+            toastr[toastOption](foundString);
             window.speechSynthesis.speak(msg);
             console.log(returnData.match);
             console.log(returnData.certainty);
